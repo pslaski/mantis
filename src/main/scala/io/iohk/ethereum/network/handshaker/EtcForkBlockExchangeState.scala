@@ -43,7 +43,7 @@ case class EtcForkBlockExchangeState(handshakerConfiguration: EtcHandshakerConfi
 
         case None =>
           log.debug("Peer did not respond with fork block header")
-          ConnectedState(PeerInfo(remoteStatus, remoteStatus.totalDifficulty, false, 0))
+          ConnectedState(PeerInfo(remoteStatus, remoteStatus.totalDifficulty, true, 0))
       }
 
   }
