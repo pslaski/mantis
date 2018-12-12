@@ -4,6 +4,7 @@ import akka.util.ByteString
 import io.iohk.ethereum.crypto.kec256
 import io.iohk.ethereum.domain.{Account, Address, UInt256}
 import io.iohk.ethereum.vm.MockWorldState._
+import javax.xml.bind.DatatypeConverter
 
 class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
   import config.feeSchedule._
@@ -43,6 +44,25 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
     CALLDATACOPY,
     RETURN
   )
+
+  // eip-140 - testcase
+  val revertCode = Assembly(
+    PUSH13, hexToByteString("72657665727465642064617461"),
+    PUSH1, 0x00,
+    SSTORE,
+    PUSH32, hexToByteString("726576657274206d657373616765000000000000000000000000000000000000"),
+    PUSH1, 0x00,
+    MSTORE,
+    PUSH1, hexToByteString("0e"),
+    PUSH1, 0x00,
+    REVERT
+  )
+
+  // taken from eip-140 testcase
+  val expectedRevertReturnData = hexToByteString("726576657274206d657373616765")
+  val usedGasByRevertAssembly = 20024
+
+  private def hexToByteString(hexString: String) = ByteString(DatatypeConverter.parseHexBinary(hexString))
 
   val selfDestructCode = Assembly(
     PUSH20, callerAddr.bytes,
@@ -95,6 +115,7 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
 
   val extProgram = extCode.program
   val invalidProgram = Program(extProgram.code.init :+ INVALID.code)
+  val revertedProgram = revertCode.program
   val selfDestructProgram = selfDestructCode.program
   val sstoreWithClearProgram = sstoreWithClearCode.program
   val accountWithCode: ByteString => Account = code => Account.empty().withCode(kec256(code))
@@ -108,6 +129,9 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
 
   val worldWithInvalidProgram = worldWithoutExtAccount.saveAccount(extAddr, accountWithCode(invalidProgram.code))
     .saveCode(extAddr, invalidProgram.code)
+
+  val worldWithRevertedProgram = worldWithoutExtAccount.saveAccount(extAddr, accountWithCode(revertedProgram.code))
+    .saveCode(extAddr, revertedProgram.code)
 
   val worldWithSelfDestructProgram = worldWithoutExtAccount.saveAccount(extAddr, accountWithCode(selfDestructProgram.code))
     .saveCode(extAddr, selfDestructCode.code)

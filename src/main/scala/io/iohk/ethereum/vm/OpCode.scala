@@ -777,6 +777,7 @@ abstract class CallOp(code: Int, delta: Int, alpha: Int) extends OpCode(code, de
         val stack2 = stack1.push(UInt256.Zero)
         val mem2 = mem1.expand(outOffset, outSize)
         val world1 = state.world.combineTouchedAccounts(result.world)
+        val returnData = if(error == RevertTransaction) result.returnData else state.returnData
         val gasAdjustment = error match {
           case InvalidCall => -startGas
           case RevertTransaction => -result.gasRemaining
@@ -786,6 +787,7 @@ abstract class CallOp(code: Int, delta: Int, alpha: Int) extends OpCode(code, de
         state
           .withStack(stack2)
           .withMemory(mem2)
+          .withReturnData(returnData)
           .withWorld(world1)
           .spendGas(gasAdjustment)
           .step()
