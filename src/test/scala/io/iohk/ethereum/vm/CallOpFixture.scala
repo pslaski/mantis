@@ -4,9 +4,8 @@ import akka.util.ByteString
 import io.iohk.ethereum.crypto.kec256
 import io.iohk.ethereum.domain.{Account, Address, UInt256}
 import io.iohk.ethereum.vm.MockWorldState._
-import javax.xml.bind.DatatypeConverter
 
-class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
+class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) extends RevertOperationFixtures {
   import config.feeSchedule._
 
   val ownerAddr = Address(0xcafebabe)
@@ -45,25 +44,6 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
     RETURN
   )
 
-  // eip-140 - testcase
-  val revertCode = Assembly(
-    PUSH13, hexToByteString("72657665727465642064617461"),
-    PUSH1, 0x00,
-    SSTORE,
-    PUSH32, hexToByteString("726576657274206d657373616765000000000000000000000000000000000000"),
-    PUSH1, 0x00,
-    MSTORE,
-    PUSH1, hexToByteString("0e"),
-    PUSH1, 0x00,
-    REVERT
-  )
-
-  // taken from eip-140 testcase
-  val expectedRevertReturnData = hexToByteString("726576657274206d657373616765")
-  val usedGasByRevertAssembly = 20024
-
-  private def hexToByteString(hexString: String) = ByteString(DatatypeConverter.parseHexBinary(hexString))
-
   val selfDestructCode = Assembly(
     PUSH20, callerAddr.bytes,
     SELFDESTRUCT
@@ -98,6 +78,7 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
 
   val inputData = Generators.getUInt256Gen().sample.get.bytes
   val expectedMemCost = config.calcMemCost(inputData.size, inputData.size, inputData.size / 2)
+  val constCallGasWithoutTransfer = G_call + expectedMemCost
 
   val initialBalance = UInt256(1000)
 

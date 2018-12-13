@@ -704,10 +704,12 @@ abstract class CreateOp extends OpCode(0xf0, 3, 1, _.G_create) {
       case Some(err) =>
         val world2 = if (err == InvalidCall) state.world else world1
         val stack2 = stack1.push(UInt256.Zero)
+        val returnData = if(result.isReverted) result.returnData else state.returnData
         state
           .spendGas(startGas - result.gasRemaining)
           .withWorld(world2)
           .withStack(stack2)
+          .withReturnData(returnData)
           .step()
 
       case None =>
@@ -777,7 +779,7 @@ abstract class CallOp(code: Int, delta: Int, alpha: Int) extends OpCode(code, de
         val stack2 = stack1.push(UInt256.Zero)
         val mem2 = mem1.expand(outOffset, outSize)
         val world1 = state.world.combineTouchedAccounts(result.world)
-        val returnData = if(error == RevertTransaction) result.returnData else state.returnData
+        val returnData = if(result.isReverted) result.returnData else state.returnData
         val gasAdjustment = error match {
           case InvalidCall => -startGas
           case RevertTransaction => -result.gasRemaining

@@ -79,7 +79,7 @@ class VM[W <: WorldStateProxy[W, S], S <: Storage[S]] extends Logger {
       val initialState: PS = ProgramState(this, context.copy(world = world1), env)
       val execResult = exec(initialState).toResult
 
-      val newContractResult = saveNewContract(context, newAddress, execResult, env.evmConfig)
+      val newContractResult = if(execResult.isReverted) execResult else saveNewContract(context, newAddress, execResult, env.evmConfig)
       (newContractResult, newAddress)
     }
 

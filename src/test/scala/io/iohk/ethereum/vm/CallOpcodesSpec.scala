@@ -150,8 +150,7 @@ class CallOpcodesSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       "don't consume consume all call gas - consume only memory cost" in {
-        val constCallGasWithoutTransfer = G_call + fxt.expectedMemCost
-        val expectedUsedGas = fxt.usedGasByRevertAssembly + constCallGasWithoutTransfer
+        val expectedUsedGas = fxt.usedGasByRevertAssembly + fxt.constCallGasWithoutTransfer
         call.stateOut.gasUsed shouldEqual expectedUsedGas
       }
 
@@ -423,8 +422,7 @@ class CallOpcodesSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       "don't consume consume all call gas - consume only memory cost" in {
-        val constCallGasWithoutTransfer = G_call + fxt.expectedMemCost
-        val expectedUsedGas = fxt.usedGasByRevertAssembly + constCallGasWithoutTransfer
+        val expectedUsedGas = fxt.usedGasByRevertAssembly + fxt.constCallGasWithoutTransfer
         call.stateOut.gasUsed shouldEqual expectedUsedGas
       }
 
@@ -622,8 +620,7 @@ class CallOpcodesSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       "don't consume consume all call gas - consume only memory cost" in {
-        val constCallGasWithoutTransfer = G_call + fxt.expectedMemCost
-        val expectedUsedGas = fxt.usedGasByRevertAssembly + constCallGasWithoutTransfer
+        val expectedUsedGas = fxt.usedGasByRevertAssembly + fxt.constCallGasWithoutTransfer
         call.stateOut.gasUsed shouldEqual expectedUsedGas
       }
 

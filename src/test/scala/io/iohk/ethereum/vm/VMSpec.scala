@@ -69,6 +69,14 @@ class VMSpec extends WordSpec with PropertyChecks with Matchers {
         result.error shouldBe Some(OutOfGas)
       }
 
+      "go RevertTransaction and not deploy new code if new contract's code execute REVERT" in new ContractCreation {
+        val context = getContext(inputData = revertCode.code)
+        val result = vm.run(context)
+
+        result.error shouldBe Some(RevertTransaction)
+        result.world.getCode(expectedNewAddress) shouldEqual ByteString.empty
+      }
+
       "fail to create contract in case of address conflict (non-empty code)" in new ContractCreation {
         val nonEmptyCodeHash = ByteString(1)
         val world = defaultWorld.saveAccount(expectedNewAddress, Account(codeHash = nonEmptyCodeHash))
@@ -190,7 +198,7 @@ class VMSpec extends WordSpec with PropertyChecks with Matchers {
       getContext(recipientAddr, world, inputData, homesteadConfig)
   }
 
-  trait ContractCreation extends TestSetup {
+  trait ContractCreation extends TestSetup with RevertOperationFixtures {
     val recipientAddr = None
 
     val expectedNewAddress = defaultWorld.createAddress(senderAddr)
