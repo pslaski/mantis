@@ -78,6 +78,9 @@ case class ProgramState[W <: WorldStateProxy[W, S], S <: Storage[S]](
   def refundGas(amount: BigInt): ProgramState[W, S] =
     copy(gasRefund = gasRefund + amount)
 
+  def discardRefundedGas: ProgramState[W, S] =
+    copy(gasRefund = 0)
+
   def step(i: Int = 1): ProgramState[W, S] =
     copy(pc = pc + i)
 

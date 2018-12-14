@@ -906,6 +906,7 @@ case object REVERT extends OpCode(0xfd, 2, 0, _.G_zero) {
       .withReturnData(errorMsg)
       .withError(RevertTransaction)
       .withMemory(mem1)
+      .discardRefundedGas
       .halt
   }
 
