@@ -17,6 +17,8 @@ case class InvalidJump(dest: UInt256) extends ProgramError {
     f"${getClass.getSimpleName}(${dest.toHexString})"
 }
 
+case object RevertTransaction extends ProgramError
+
 sealed trait StackError extends ProgramError
 case object StackOverflow extends StackError
 case object StackUnderflow extends StackError

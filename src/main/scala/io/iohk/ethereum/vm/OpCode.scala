@@ -155,6 +155,7 @@ object OpCodes {
       CALL,
       CALLCODE,
       RETURN,
+      REVERT,
       INVALID,
       SELFDESTRUCT)
 
@@ -703,10 +704,12 @@ abstract class CreateOp extends OpCode(0xf0, 3, 1, _.G_create) {
       case Some(err) =>
         val world2 = if (err == InvalidCall) state.world else world1
         val stack2 = stack1.push(UInt256.Zero)
+        val returnData = if(result.isReverted) result.returnData else state.returnData
         state
           .spendGas(startGas - result.gasRemaining)
           .withWorld(world2)
           .withStack(stack2)
+          .withReturnData(returnData)
           .step()
 
       case None =>
@@ -776,11 +779,17 @@ abstract class CallOp(code: Int, delta: Int, alpha: Int) extends OpCode(code, de
         val stack2 = stack1.push(UInt256.Zero)
         val mem2 = mem1.expand(outOffset, outSize)
         val world1 = state.world.combineTouchedAccounts(result.world)
-        val gasAdjustment = if (error == InvalidCall) -startGas else BigInt(0)
+        val returnData = if(result.isReverted) result.returnData else state.returnData
+        val gasAdjustment = error match {
+          case InvalidCall => -startGas
+          case RevertTransaction => -result.gasRemaining
+          case _ => BigInt(0)
+        }
 
         state
           .withStack(stack2)
           .withMemory(mem2)
+          .withReturnData(returnData)
           .withWorld(world1)
           .spendGas(gasAdjustment)
           .step()
@@ -881,6 +890,24 @@ case object RETURN extends OpCode(0xf3, 2, 0, _.G_zero) {
     val (Seq(offset, size), stack1) = state.stack.pop(2)
     val (ret, mem1) = state.memory.load(offset, size)
     state.withStack(stack1).withReturnData(ret).withMemory(mem1).halt
+  }
+
+  protected def varGas[W <: WorldStateProxy[W, S], S <: Storage[S]](state: ProgramState[W, S]): BigInt = {
+    val (Seq(offset, size), _) = state.stack.pop(2)
+    state.config.calcMemCost(state.memory.size, offset, size)
+  }
+}
+
+case object REVERT extends OpCode(0xfd, 2, 0, _.G_zero) {
+  protected def exec[W <: WorldStateProxy[W, S], S <: Storage[S]](state: ProgramState[W, S]): ProgramState[W, S] = {
+    val (Seq(offset, size), stack1) = state.stack.pop(2)
+    val (errorMsg, mem1) = state.memory.load(offset, size)
+    state.withStack(stack1)
+      .withReturnData(errorMsg)
+      .withError(RevertTransaction)
+      .withMemory(mem1)
+      .discardRefundedGas
+      .halt
   }
 
   protected def varGas[W <: WorldStateProxy[W, S], S <: Storage[S]](state: ProgramState[W, S]): BigInt = {

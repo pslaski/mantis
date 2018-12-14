@@ -132,6 +132,33 @@ class CallOpcodesSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
 
+    "calling a program that executes a REVERT" should {
+
+      val context: PC = fxt.context.copy(world = fxt.worldWithRevertedProgram)
+      val call = fxt.CallResult(op = CALL, context = context, value = UInt256.Zero)
+
+      "should not modify world state" in {
+        call.world shouldEqual fxt.worldWithRevertedProgram
+      }
+
+      "return 0" in {
+        call.stateOut.stack.pop._1 shouldEqual UInt256.Zero
+      }
+
+      "return error msg in return data" in {
+        call.stateOut.returnData shouldEqual fxt.expectedRevertReturnData
+      }
+
+      "don't consume consume all call gas - consume only memory cost" in {
+        val expectedUsedGas = fxt.usedGasByRevertAssembly + fxt.constCallGasWithoutTransfer
+        call.stateOut.gasUsed shouldEqual expectedUsedGas
+      }
+
+      "extend memory" in {
+        UInt256(call.stateOut.memory.size) shouldEqual call.outOffset + call.outSize
+      }
+    }
+
     "calling a non-existent account" should {
 
       val context: PC = fxt.context.copy(world = fxt.worldWithoutExtAccount)
@@ -377,6 +404,33 @@ class CallOpcodesSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
 
+    "calling a program that executes a REVERT" should {
+
+      val context: PC = fxt.context.copy(world = fxt.worldWithRevertedProgram)
+      val call = fxt.CallResult(op = CALLCODE, context = context, value = UInt256.Zero)
+
+      "should not modify world state" in {
+        call.world shouldEqual fxt.worldWithRevertedProgram
+      }
+
+      "return 0" in {
+        call.stateOut.stack.pop._1 shouldEqual UInt256.Zero
+      }
+
+      "return error msg in return data" in {
+        call.stateOut.returnData shouldEqual fxt.expectedRevertReturnData
+      }
+
+      "don't consume consume all call gas - consume only memory cost" in {
+        val expectedUsedGas = fxt.usedGasByRevertAssembly + fxt.constCallGasWithoutTransfer
+        call.stateOut.gasUsed shouldEqual expectedUsedGas
+      }
+
+      "extend memory" in {
+        UInt256(call.stateOut.memory.size) shouldEqual call.outOffset + call.outSize
+      }
+    }
+
     "external account does not exist" should {
       val context: PC = fxt.context.copy(world = fxt.worldWithoutExtAccount)
       val call = fxt.CallResult(op = CALLCODE, context)
@@ -541,6 +595,33 @@ class CallOpcodesSpec extends WordSpec with Matchers with PropertyChecks {
       "consume all call gas" in {
         val expectedGas = fxt.requiredGas + fxt.gasMargin + G_call + fxt.expectedMemCost
         call.stateOut.gasUsed shouldEqual expectedGas
+      }
+
+      "extend memory" in {
+        UInt256(call.stateOut.memory.size) shouldEqual call.outOffset + call.outSize
+      }
+    }
+
+    "calling a program that executes a REVERT" should {
+
+      val context: PC = fxt.context.copy(world = fxt.worldWithRevertedProgram)
+      val call = fxt.CallResult(op = DELEGATECALL, context = context, value = UInt256.Zero)
+
+      "should not modify world state" in {
+        call.world shouldEqual fxt.worldWithRevertedProgram
+      }
+
+      "return 0" in {
+        call.stateOut.stack.pop._1 shouldEqual UInt256.Zero
+      }
+
+      "return error msg in return data" in {
+        call.stateOut.returnData shouldEqual fxt.expectedRevertReturnData
+      }
+
+      "don't consume consume all call gas - consume only memory cost" in {
+        val expectedUsedGas = fxt.usedGasByRevertAssembly + fxt.constCallGasWithoutTransfer
+        call.stateOut.gasUsed shouldEqual expectedUsedGas
       }
 
       "extend memory" in {

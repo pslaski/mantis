@@ -21,4 +21,7 @@ case class ProgramResult[W <: WorldStateProxy[W, S], S <: Storage[S]](
   logs: Seq[TxLogEntry],
   internalTxs: Seq[InternalTransaction],
   gasRefund: BigInt,
-  error: Option[ProgramError])
+  error: Option[ProgramError]) {
+
+  def isReverted: Boolean = error.contains(RevertTransaction)
+}

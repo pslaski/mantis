@@ -65,7 +65,7 @@ class VM[W <: WorldStateProxy[W, S], S <: Storage[S]] extends Logger {
       (invalidCallResult(context), Address(0))
     else {
       require(context.recipientAddr.isEmpty, "recipient address must be empty for contract creation")
-      require(context.doTransfer, "contract creation will alwyas transfer funds")
+      require(context.doTransfer, "contract creation will always transfer funds")
 
       val newAddress = context.world.createAddress(context.callerAddr)
       val world1 = context.world.initialiseAccount(newAddress).transfer(context.callerAddr, newAddress, context.endowment)
@@ -79,7 +79,7 @@ class VM[W <: WorldStateProxy[W, S], S <: Storage[S]] extends Logger {
       val initialState: PS = ProgramState(this, context.copy(world = world1), env)
       val execResult = exec(initialState).toResult
 
-      val newContractResult = saveNewContract(context, newAddress, execResult, env.evmConfig)
+      val newContractResult = if(execResult.isReverted) execResult else saveNewContract(context, newAddress, execResult, env.evmConfig)
       (newContractResult, newAddress)
     }
 

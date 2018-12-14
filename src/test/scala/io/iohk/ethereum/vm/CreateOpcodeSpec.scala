@@ -11,7 +11,7 @@ class CreateOpcodeSpec extends WordSpec with Matchers {
   val config = EvmConfig.PostEIP161ConfigBuilder(blockchainConfig)
   import config.feeSchedule._
 
-  object fxt {
+  object fxt extends RevertOperationFixtures {
 
     val creatorAddr = Address(0xcafe)
     val endowment: UInt256 = 123
@@ -232,6 +232,36 @@ class CreateOpcodeSpec extends WordSpec with Matchers {
 
     "refund the correct amount of gas" in {
       result.stateOut.gasRefund shouldBe result.stateOut.config.feeSchedule.R_selfdestruct
+    }
+
+  }
+
+  "initialization includes REVERT opcode" should {
+    val result = CreateResult(createCode = fxt.revertCode.code)
+
+    "not deploy contract code" in {
+      result.world.getCode(fxt.newAddr) shouldEqual ByteString.empty
+    }
+
+    "increase nonce of creator account" in {
+      result.world.getGuaranteedAccount(fxt.creatorAddr).nonce shouldEqual 1
+    }
+
+    "return push 0 on stack" in {
+      result.returnValue shouldEqual 0
+    }
+
+    "return error message in return data" in {
+      result.stateOut.returnData shouldEqual fxt.expectedRevertReturnData
+    }
+
+    "consume correct amount of gas" in {
+      val expectedUsedGas = fxt.usedGasByRevertAssembly + G_create
+      result.stateOut.gasUsed shouldBe expectedUsedGas
+    }
+
+    "step forward" in {
+      result.stateOut.pc shouldEqual result.stateIn.pc + 1
     }
 
   }

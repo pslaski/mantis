@@ -124,7 +124,7 @@ class BlockPreparator(
    * See YP, eq (72)
    */
   private[ledger] def calcTotalGasToRefund(stx: SignedTransaction, result: PR): BigInt = {
-    if (result.error.isDefined)
+    if (result.error.isDefined && !result.isReverted)
       0
     else {
       val gasUsed = stx.tx.gasLimit - result.gasRemaining

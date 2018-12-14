@@ -456,6 +456,26 @@ class OpCodeGasSpec extends FunSuite with OpCodeTesting with Matchers with Prope
     }
   }
 
+  test(REVERT) { op =>
+    val maxGas = config.calcMemCost(256, 256, 256)
+    val stateGen = getProgramStateGen(
+      stackGen = getStackGen(elems = 2, maxUInt = UInt256(256)),
+      gasGen = getBigIntGen(max = maxGas)
+    )
+
+    forAll(stateGen) { stateIn =>
+      val stateInWithRefundedGas = stateIn.copy(gasRefund = 10)
+      val stateOut = op.execute(stateInWithRefundedGas)
+
+      val (Seq(offset, size), _) = stateInWithRefundedGas.stack.pop(2)
+      val expectedGas = config.calcMemCost(stateInWithRefundedGas.memory.size, offset, size)
+
+      verifyGas(expectedGas, stateIn, stateOut)
+      // some tests aren't execute the REVERT op
+      if(stateOut.error.contains(RevertTransaction)) stateOut.gasRefund shouldEqual 0
+    }
+  }
+
   test(SELFDESTRUCT) { op =>
     val stateGen = getProgramStateGen(
       stackGen = getStackGen(elems = 1)

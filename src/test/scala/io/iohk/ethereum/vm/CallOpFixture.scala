@@ -5,7 +5,7 @@ import io.iohk.ethereum.crypto.kec256
 import io.iohk.ethereum.domain.{Account, Address, UInt256}
 import io.iohk.ethereum.vm.MockWorldState._
 
-class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
+class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) extends RevertOperationFixtures {
   import config.feeSchedule._
 
   val ownerAddr = Address(0xcafebabe)
@@ -78,6 +78,7 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
 
   val inputData = Generators.getUInt256Gen().sample.get.bytes
   val expectedMemCost = config.calcMemCost(inputData.size, inputData.size, inputData.size / 2)
+  val constCallGasWithoutTransfer = G_call + expectedMemCost
 
   val initialBalance = UInt256(1000)
 
@@ -95,6 +96,7 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
 
   val extProgram = extCode.program
   val invalidProgram = Program(extProgram.code.init :+ INVALID.code)
+  val revertedProgram = revertCode.program
   val selfDestructProgram = selfDestructCode.program
   val sstoreWithClearProgram = sstoreWithClearCode.program
   val accountWithCode: ByteString => Account = code => Account.empty().withCode(kec256(code))
@@ -108,6 +110,9 @@ class CallOpFixture(val config: EvmConfig, val startState: MockWorldState) {
 
   val worldWithInvalidProgram = worldWithoutExtAccount.saveAccount(extAddr, accountWithCode(invalidProgram.code))
     .saveCode(extAddr, invalidProgram.code)
+
+  val worldWithRevertedProgram = worldWithoutExtAccount.saveAccount(extAddr, accountWithCode(revertedProgram.code))
+    .saveCode(extAddr, revertedProgram.code)
 
   val worldWithSelfDestructProgram = worldWithoutExtAccount.saveAccount(extAddr, accountWithCode(selfDestructProgram.code))
     .saveCode(extAddr, selfDestructCode.code)

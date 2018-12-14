@@ -40,15 +40,13 @@ trait OpCodeTesting extends FunSuiteLike {
   }
 
   def verifyGas(expectedGas: BigInt, stateIn: PS, stateOut: PS, allowOOG: Boolean = true): Unit = {
-    if (stateOut.error.contains(OutOfGas) && allowOOG)
-      stateIn.gas should be < expectedGas
-    else if (stateOut.error.contains(OutOfGas) && !allowOOG)
-      fail(s"Unexpected $OutOfGas error")
-    else if (stateOut.error.isDefined && stateOut.error.collect{ case InvalidJump(dest) => dest }.isEmpty)
-    //Found error that is not an InvalidJump
-      fail(s"Unexpected ${stateOut.error.get} error")
-    else {
-      stateOut.gas shouldEqual (stateIn.gas - expectedGas)
+    stateOut.error match {
+      case Some(OutOfGas) if allowOOG =>
+        stateIn.gas should be < expectedGas
+      case None | Some(InvalidJump(_)) | Some(RevertTransaction) =>
+        stateOut.gas shouldEqual (stateIn.gas - expectedGas)
+      case Some(error) =>
+        fail(s"Unexpected $error error")
     }
   }
 }
